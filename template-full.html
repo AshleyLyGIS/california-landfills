@@ -150,6 +150,9 @@
 		integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
 		crossorigin=""></script>
 
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.2/proj4.js"></script>
+ 	<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4leaflet/1.0.2/proj4leaflet.min.js"></script>
+
 	<!-- Load a Leaflet plugin to provide geolocation. -->
 	<script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.js" charset="utf-8">
 	</script>
@@ -191,18 +194,43 @@
 		// requests some map tiles
 		var tiles = L.tileLayer(basemap_url, basemap_attributes);
 
-		// draw data to the map 
-		$.getJSON("data/ca_landfills.geojson", function (data) {
-			L.geoJson(data).addTo(map);
-		});
-
+		// add tiles to map
 		map.addLayer(tiles);
 
-		var message = '<h2>University of Kentucky!</h2>Department of Geography';
+		// circle marker style
+		var commonStyles = {
+			radius: 5,
+			weight: 1,
+			stroke: 1,
+			fillOpacity: .8
+		}
 
-		L.marker(map.getCenter())
-			.bindPopup(message)
-			.addTo(map)
+		// draw data to the map - AJAX call to get external GeoJSON and draw basic map
+		var landfillLayer = $.getJSON("data/ca_landfills.geojson", function (data) {
+			var dataLayer = L.geoJson(data, {
+				pointToLayer: function (feature, latlng) {
+					return L.circleMarker(latlng, commonStyles);
+				},
+				filter: function (feature) {
+					if (feature.properties['Landfill Name'] != null) {
+						return feature;
+					}
+				},
+				onEachFeature: function (feature, layer) {
+					var props = feature.properties
+					console.log(props)
+					var name = props['Landfill Name']
+					var status = props['Current Landfill Status']
+					var openYear = props['Year Landfill Opened']
+					var closeYear = props['Landfill Closure Year']
+					var waste = props['Waste in Place (tons)']
+					var popup = `<b>${name}</b><br> 
+                    			Current Status: ${status}, ${openYear}-${closeYear}<br>
+								Waste in Place: ${waste} tons`
+					layer.bindPopup(popup)
+				}
+			}).addTo(map);
+		});
 	</script>
 
 </body>
