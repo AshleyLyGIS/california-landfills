@@ -217,6 +217,26 @@
 					}
 				},
 				onEachFeature: function (feature, layer) {
+
+					if (feature.properties['Current Landfill Status'] = "Closed") {
+					layer.setStyle({
+						fillColor: '#C99E10',
+						color: '#C99E10',
+						opacity: .4,
+						fillOpacity: .4,
+						
+					});
+				} else if (feature.properties['Current Landfill Status'] != "Open") {
+					layer.setStyle({
+						fillColor: '#00e64d',
+						color: '#00e64d',
+						opacity: .4,
+						fillOpacity: .4,
+						
+					});
+				}
+
+
 					var props = feature.properties
 					console.log(props)
 					var name = props['Landfill Name']
@@ -230,7 +250,22 @@
 					layer.bindPopup(popup)
 				}
 			}).addTo(map);
+
+		// mouseover and mouseout interactivity
+		dataLayer.eachLayer(function (layer) {
+			layer.on('mouseover', function (e) {
+				this.openPopup()
+			})
+			layer.on('mouseout', function (e) {
+				dataLayer.resetStyle(dataLayer)
+				this.closePopup()
+			})
+		})
+		
+
 		});
+
+		
 	</script>
 
 </body>
