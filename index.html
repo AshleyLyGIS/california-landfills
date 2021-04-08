@@ -200,6 +200,11 @@
 		// add tiles to map
 		map.addLayer(tiles);
 
+		// sorting the data 
+		landfills.features.sort(function (a, b) {
+			return b.properties['Waste in Place (tons)'] - a.properties['Waste in Place (tons)'];
+		});
+
 		// circle marker style
 		var commonStyles = {
 			weight: 1,
@@ -223,6 +228,22 @@
 				var waste = props['Waste in Place (tons)']
 				//console.log(status)
 
+				// -----ca_landfill_OG.geojson-----
+
+				//console.log(typeof(waste))
+				// currently a string
+
+				// convert to number
+				// var wasteNumber = Number(waste);
+
+				//console.log(typeof (wasteNumber))
+				//console.log(wasteNumber)
+				// NaN because of commas
+
+				// cannot fix so uploaded new GEOJSON file with number type
+
+				// -----ca_landfill.geojson-----
+
 				//color indicating the status
 				//OPEN STATUS
 				if (status == "Open") {
@@ -231,7 +252,8 @@
 						fillColor: '#0099ff',
 						weight: 1,
 						fillOpacity: .6,
-						radius: 8
+						radius: 8,
+						radius: getRadius(waste)
 					});
 					//CLOSED/UNKNOWN STATUS
 				} else if (status != "Open") {
@@ -240,23 +262,54 @@
 						fillColor: '#ff6666',
 						weight: 1,
 						fillOpacity: .6,
-						radius: 8
+						radius: 8,
+						radius: getRadius(waste)
 					});
 				}
 
 				var name = props['Landfill Name']
 				var openYear = props['Year Landfill Opened']
 				var closeYear = props['Landfill Closure Year']
-				var waste = props['Waste in Place (tons)']
+
+				// waste is a number
+				// how come have to input Number??
+				var wasteNum = Number(waste).toLocaleString()
+				// console.log(wasteNum)
+
+
 				var popup = `<b>${name}</b><br> 
                                 Current Status: ${status}<br>
                                 Dates of Operation: ${openYear}-${closeYear}<br>
-                                Waste in Place: ${waste} tons`
+                                Waste in Place: ${wasteNum} tons`
 				layer.bindPopup(popup)
 			}
-
 		}).addTo(map)
 		//  }); --- AJAX call to external not loading
+
+		//proportional symbol indicating the capacity
+		function getRadius(area) {
+			var radius = Math.sqrt(area / Math.PI);
+			return radius * .01;
+		}
+
+		$.when(landfillsLayer).done(function () {
+			// load, filter, and style the state outline 
+			$.getJSON("data/us_states_20m.geojson", function (data) {
+				var stateLayer = L.geoJson(data, {
+					style: function (feature) {
+						return {
+							color: '#222',
+							weight: 2,
+							fillOpacity: 0,
+							opacity: .25,
+							interactive: false
+						};
+					},
+				});
+				// Add layer to map!
+				stateLayer.addTo(map)
+			});
+		});
 
 		// mouseover and mouseout interactivity
 		// dataLayer.eachLayer(function (layer) {
