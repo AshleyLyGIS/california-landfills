@@ -91,9 +91,9 @@
 		}
 
 		/* 
-		When browser is 900px high or less
-		make the font a little smaller.
-		 */
+        When browser is 900px high or less
+        make the font a little smaller.
+         */
 		@media screen and (max-height: 400px) {
 
 			#about p,
@@ -133,9 +133,10 @@
 
 	<section id="about">
 		<h2>Data</h2>
-		<p>California has the largest amount of landfills in the country. This landfill data was gathered from US EPA 
-			<a href="https://www.epa.gov/lmop/project-and-landfill-data-state">Landfill Methane Outreach Program (LMOP)</a>
-			 </p>
+		<p>California has the largest amount of landfills in the country. This landfill data was gathered from US EPA
+			<a href="https://www.epa.gov/lmop/project-and-landfill-data-state">Landfill Methane Outreach Program
+				(LMOP)</a>
+		</p>
 		<p>Map authored by Ashley Ly</p>
 	</section>
 
@@ -151,11 +152,13 @@
 		crossorigin=""></script>
 
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.2/proj4.js"></script>
- 	<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4leaflet/1.0.2/proj4leaflet.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4leaflet/1.0.2/proj4leaflet.min.js"></script>
 
 	<!-- Load a Leaflet plugin to provide geolocation. -->
 	<script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.js" charset="utf-8">
 	</script>
+
+	<script src="data/ca_landfills.geojson"></script>
 
 	<script>
 		var options = {
@@ -168,7 +171,7 @@
 		var locate_options = {
 			position: 'topright',
 			strings: {
-				title: "Show me where I am, yo!"
+				title: "Your Current Location"
 			}
 		}
 
@@ -199,53 +202,72 @@
 
 		// circle marker style
 		var commonStyles = {
-			radius: 5,
 			weight: 1,
-			stroke: 1,
-			fillOpacity: .8
+			fillOpacity: .6,
+			radius: 8
 		}
 
-		// draw data to the map - AJAX call to get external GeoJSON and draw basic map
-		var landfillLayer = $.getJSON("data/ca_landfills.geojson", function (data) {
-			var dataLayer = L.geoJson(data, {
-				pointToLayer: function (feature, latlng) {
-					return L.circleMarker(latlng, commonStyles);
-				},
-				filter: function (feature) {
-					if (feature.properties['Landfill Name'] != null) {
-						return feature;
-					}
-				},
-				onEachFeature: function (feature, layer) {
-					var props = feature.properties
-					console.log(props)
-					var name = props['Landfill Name']
-					var status = props['Current Landfill Status']
-					var openYear = props['Year Landfill Opened']
-					var closeYear = props['Landfill Closure Year']
-					var waste = props['Waste in Place (tons)']
-					var popup = `<b>${name}</b><br> 
-                    			Current Status: ${status}, ${openYear}-${closeYear}<br>
-								Waste in Place: ${waste} tons`
-					layer.bindPopup(popup)
+		// Bivariate Map
+
+		// // draw data to the map - AJAX call to get external GeoJSON and draw basic map --- NOT LOADING
+		// var landfillsLayer = $.getJSON("data/ca_landfills.geojson", function (data) {
+		// var dataLayer = L.geoJson(data, {
+
+		var landfillsLayer = L.geoJson(landfills, {
+			pointToLayer: function (feature, latlng) {
+				return L.circleMarker(latlng, commonStyles);
+			},
+			onEachFeature: function (feature, layer) {
+				var props = feature.properties
+				var status = props['Current Landfill Status']
+				var waste = props['Waste in Place (tons)']
+				//console.log(status)
+
+				//color indicating the status
+				//OPEN STATUS
+				if (status == "Open") {
+					layer.setStyle({
+						color: '#0099ff',
+						fillColor: '#0099ff',
+						weight: 1,
+						fillOpacity: .6,
+						radius: 8
+					});
+					//CLOSED/UNKNOWN STATUS
+				} else if (status != "Open") {
+					layer.setStyle({
+						color: '#ff6666',
+						fillColor: '#ff6666',
+						weight: 1,
+						fillOpacity: .6,
+						radius: 8
+					});
 				}
-			}).addTo(map);
+
+				var name = props['Landfill Name']
+				var openYear = props['Year Landfill Opened']
+				var closeYear = props['Landfill Closure Year']
+				var waste = props['Waste in Place (tons)']
+				var popup = `<b>${name}</b><br> 
+                                Current Status: ${status}<br>
+                                Dates of Operation: ${openYear}-${closeYear}<br>
+                                Waste in Place: ${waste} tons`
+				layer.bindPopup(popup)
+			}
+
+		}).addTo(map)
+		//  }); --- AJAX call to external not loading
 
 		// mouseover and mouseout interactivity
-		dataLayer.eachLayer(function (layer) {
-			layer.on('mouseover', function (e) {
-				this.openPopup()
-			})
-			layer.on('mouseout', function (e) {
-				dataLayer.resetStyle(dataLayer)
-				this.closePopup()
-			})
-		})
-		
-
-		});
-
-		
+		// dataLayer.eachLayer(function (layer) {
+		// 	layer.on('mouseover', function (e) {
+		// 		this.openPopup()
+		// 	})
+		// 	layer.on('mouseout', function (e) {
+		// 		dataLayer.resetStyle(dataLayer)
+		// 		this.closePopup()
+		// 	})
+		// })
 	</script>
 
 </body>
