@@ -348,16 +348,16 @@
 			});
 		});
 
-		// mouseover and mouseout interactivity
-		// dataLayer.eachLayer(function (layer) {
-		// 	layer.on('mouseover', function (e) {
-		// 		this.openPopup()
-		// 	})
-		// 	layer.on('mouseout', function (e) {
-		// 		dataLayer.resetStyle(dataLayer)
-		// 		this.closePopup()
-		// 	})
-		// })
+		//mouseover and mouseout interactivity
+		landfillsLayer.eachLayer(function (layer) {
+			layer.on('mouseover', function (e) {
+				this.openPopup()
+			})
+			layer.on('mouseout', function (e) {
+				dataLayer.resetStyle(dataLayer)
+				this.closePopup()
+			})
+		})
 
 		// button to maximize map space and reduce about/info/title
 		var button = document.querySelector('#info')
