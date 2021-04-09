@@ -253,15 +253,20 @@
 		// var landfillsLayer = $.getJSON("data/ca_landfills.geojson", function (data) {
 		// var dataLayer = L.geoJson(data, {
 
-		var landfillsLayer = L.geoJson(landfills, {
+		//-----OPEN STATUS LAYER-----
+		var openLayer = L.geoJson(landfills, {
 			pointToLayer: function (feature, latlng) {
-				return L.circleMarker(latlng, commonStyles);
+				return L.circleMarker(latlng);
 			},
-			onEachFeature: function (feature, layer) {
+			filter: function (feature) {
+				var status = feature.properties['Current Landfill Status']
+				if (status == "Open") {
+					return feature
+				};
+			},
+			style: function (feature) {
 				var props = feature.properties
-				var status = props['Current Landfill Status']
 				var waste = props['Waste in Place (tons)']
-				//console.log(status)
 
 				// -----ca_landfills_OG.geojson-----
 
@@ -276,80 +281,135 @@
 				// NaN because of commas
 
 				// cannot fix so uploaded new GEOJSON file with number type
-
 				// -----ca_landfills.geojson-----
 
-				//color indicating the status
-				//OPEN STATUS
-				if (status == "Open") {
-					layer.setStyle({
-						color: '#0099ff',
-						fillColor: '#0099ff',
-						weight: 1,
-						fillOpacity: .6,
-						radius: 8,
-						radius: getRadius(waste)
-					});
-					//CLOSED/UNKNOWN STATUS
-				} else if (status != "Open") {
-					layer.setStyle({
-						color: '#ff6666',
-						fillColor: '#ff6666',
-						weight: 1,
-						fillOpacity: .6,
-						radius: 8,
-						radius: getRadius(waste)
-					});
+				return {
+					color: '#0099ff',
+					fillColor: '#0099ff',
+					weight: 1,
+					fillOpacity: .6,
+					radius: 8,
+					radius: getRadius(waste)
+				};
+			},
+			onEachFeature: function (feature, layer) {
+				{
+					var props = feature.properties
+					var status = feature.properties['Current Landfill Status']
+
+					var name = props['Landfill Name']
+
+					var waste = props['Waste in Place (tons)']
+					// console.log(waste)
+					// console.log(typeof(waste))
+					// waste is a number
+					// how come have to input Number??
+					var wasteString = Number(waste).toLocaleString()
+					// console.log(wasteString)
+					// console.log(typeof(wasteString))
+
+					var openYear = props['Year Landfill Opened']
+					var closeYear = props['Landfill Closure Year']
+
+					var popup = `<b>${name}</b><br> 
+                             Current Status: ${status}<br>
+                             Dates of Operation: ${openYear}-${closeYear}<br>
+                             Waste in Place: ${wasteString} tons`
 				}
-
-				// HOW TO DEAL WITH NULL "WASTE"TONS MARKERS?
-
-				var name = props['Landfill Name']
-				var openYear = props['Year Landfill Opened']
-				var closeYear = props['Landfill Closure Year']
-
-				// waste is a number
-				// how come have to input Number??
-				var wasteNum = Number(waste).toLocaleString()
-				// console.log(wasteNum)
-
-
-				var popup = `<b>${name}</b><br> 
-                                Current Status: ${status}<br>
-                                Dates of Operation: ${openYear}-${closeYear}<br>
-                                Waste in Place: ${wasteNum} tons`
 				layer.bindPopup(popup)
 			}
-		}).addTo(map)
-		//  }); --- AJAX call to external not loading
+		}).addTo(map);
 
-		//proportional symbol indicating the capacity
+
+		//-----CLOSED/UNKNOWN STATUS LAYER-----
+		var closedLayer = L.geoJson(landfills, {
+			pointToLayer: function (feature, latlng) {
+				return L.circleMarker(latlng, commonStyles);
+			},
+			filter: function (feature) {
+				var status = feature.properties['Current Landfill Status']
+				if (status != "Open") {
+					return feature
+				};
+			},
+			style: function (feature) {
+				var props = feature.properties
+				var waste = props['Waste in Place (tons)']
+
+				// -----ca_landfills_OG.geojson-----
+
+				//console.log(typeof(waste))
+				// currently a string
+
+				// convert to number
+				// var wasteNumber = Number(waste);
+
+				//console.log(typeof (wasteNumber))
+				//console.log(wasteNumber)
+				// NaN because of commas
+
+				// cannot fix so uploaded new GEOJSON file with number type
+				// -----ca_landfills.geojson-----
+
+				return {
+					color: '#ff6666',
+					fillColor: '#ff6666',
+					weight: 1,
+					fillOpacity: .6,
+					radius: 8,
+					radius: getRadius(waste)
+				};
+			},
+			onEachFeature: function (feature, layer) {
+				{
+					var props = feature.properties
+					var status = feature.properties['Current Landfill Status']
+
+					var name = props['Landfill Name']
+
+					var waste = props['Waste in Place (tons)']
+					// console.log(waste)
+					// console.log(typeof(waste))
+					// waste is a number
+					// how come have to input Number??
+					var wasteString = Number(waste).toLocaleString()
+					// console.log(wasteString)
+					// console.log(typeof(wasteString))
+
+					var openYear = props['Year Landfill Opened']
+					var closeYear = props['Landfill Closure Year']
+
+					var popup = `<b>${name}</b><br> 
+                             Current Status: ${status}<br>
+                             Dates of Operation: ${openYear}-${closeYear}<br>
+                             Waste in Place: ${wasteString} tons`
+				}
+				layer.bindPopup(popup)
+
+			}
+
+
+		}).addTo(map);
+
+		// legend
+		var statusLayers = {
+			"<b style='color:#0099ff'>Open</b>": openLayer,
+			"<b style='color:#ff6666'>Closed</b>": closedLayer,
+		}
+
+		L.control.layers(null, statusLayers, {
+			collapsed: false,
+			position: 'bottomright'
+		}).addTo(map);
+
+		// proportional symbol indicating tonnage
 		function getRadius(area) {
 			var radius = Math.sqrt(area / Math.PI);
 			return radius * .01;
 		}
 
-		$.when(landfillsLayer).done(function () {
-			// load, filter, and style the state outline 
-			$.getJSON("data/us_states_20m.geojson", function (data) {
-				var stateLayer = L.geoJson(data, {
-					style: function (feature) {
-						return {
-							color: '#222',
-							weight: 2,
-							fillOpacity: 0,
-							opacity: .25,
-							interactive: false
-						};
-					},
-				});
-				// Add layer to map!
-				stateLayer.addTo(map)
-			});
-		});
-
-		//mouseover and mouseout interactivity
-		landfillsLayer.eachLayer(function (layer) {
+		// mouseover and mouseout Popup interactivity
+		openLayer.eachLayer(function (layer) {
 			layer.on('mouseover', function (e) {
 				this.openPopup()
 			})
@@ -358,6 +418,36 @@
 				this.closePopup()
 			})
 		})
+
+		closedLayer.eachLayer(function (layer) {
+			layer.on('mouseover', function (e) {
+				this.openPopup()
+			})
+			layer.on('mouseout', function (e) {
+				dataLayer.resetStyle(dataLayer)
+				this.closePopup()
+			})
+		})
+
+		// // Total state tonnage with tooltip
+		// $.when(landfillsLayer).done(function () {
+		// 	// load, filter, and style the state outline 
+		// 	$.getJSON("data/us_states_20m.geojson", function (data) {
+		// 		var stateLayer = L.geoJson(data, {
+		// 			style: function (feature) {
+		// 				return {
+		// 					color: '#222',
+		// 					weight: 2,
+		// 					fillOpacity: 0,
+		// 					opacity: .25,
+		// 					interactive: false
+		// 				};
+		// 			},
+		// 		});
+		// 		// Add layer to map!
+		// 		stateLayer.addTo(map)
+		// 	});
+		// });
 
 		// button to maximize map space and reduce about/info/title
 		var button = document.querySelector('#info')
