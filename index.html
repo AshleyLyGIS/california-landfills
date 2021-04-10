@@ -168,10 +168,9 @@
 
 	<section id="about">
 		<h2>Data</h2>
-		<p>California has the largest amount of landfills in the country. This landfill data was gathered from US EPA
+		<p>California has the largest amount of landfills in the country. Data sourced from US EPA
 			<a href="https://www.epa.gov/lmop/project-and-landfill-data-state">Landfill Methane Outreach Program
-				(LMOP)</a>
-		</p>
+				(LMOP), March 2021.</a></p>
 		<p>Map authored by Ashley Ly</p>
 	</section>
 
@@ -179,7 +178,7 @@
 	<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
 		integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
 		crossorigin=""></script>
-	<!-- add jQuery JS script -->
+	<!-- Add jQuery JS script -->
 	<script src="https://code.jquery.com/jquery-3.6.0.min.js"
 		integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
 	<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
@@ -193,14 +192,17 @@
 	<script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.js" charset="utf-8">
 	</script>
 
+	<!--- Add GeoJSON Data -->
 	<script src="data/ca_landfills.geojson"></script>
 
 	<script>
 		var options = {
 			center: [37.60317118874016, -120.41632246129653],
-			zoom: 5.95,
+			zoom: 5.75,
 			zoomSnap: .1,
-			zoomControl: false
+			zoomControl: false,
+			//restrict zoom to California
+			minZoom: 5.75
 		}
 
 		var locate_options = {
@@ -311,14 +313,48 @@
 					var openYear = props['Year Landfill Opened']
 					var closeYear = props['Landfill Closure Year']
 
-					var popup = `<b>${name}</b><br> 
+					if (openYear == null && closeYear == null) {
+						var popup = `<b>${name}</b><br> 
+                             Current Status: ${status}<br>
+                             Dates of Operation: Unknown<br>
+                             Waste in Place: ${wasteString} tons`
+					} else if (closeYear == null) {
+						var popup = `<b>${name}</b><br> 
+                             Current Status: ${status}<br>
+                             Dates of Operation: ${openYear}-Unknown<br>
+                             Waste in Place: ${wasteString} tons`
+					} else if (openYear == null) {
+						var popup = `<b>${name}</b><br> 
+                             Current Status: ${status}<br>
+                             Dates of Operation: Unknown-${closeYear}<br>
+                             Waste in Place: ${wasteString} tons`
+					} else {
+						var popup = `<b>${name}</b><br> 
                              Current Status: ${status}<br>
                              Dates of Operation: ${openYear}-${closeYear}<br>
                              Waste in Place: ${wasteString} tons`
+					}
+
+					// mouseover and mouseout Popup interactivity
+					layer.on('mouseover', function (e) {
+						this.openPopup()
+						e.target.setStyle({
+							fillColor: 'yellow',
+						})
+					})
+
+					layer.on('mouseout', function (e) {
+						this.closePopup()
+						//e.target.resetStyle({ --- is not a function?
+						e.target.setStyle({
+							fillColor: '#0099ff'
+						})
+					})
+
 				}
 				layer.bindPopup(popup)
 			}
-		}).addTo(map);
+		}).addTo(map); //------end of OPEN LAYER-----
 
 
 		//-----CLOSED/UNKNOWN STATUS LAYER-----
@@ -379,17 +415,48 @@
 					var openYear = props['Year Landfill Opened']
 					var closeYear = props['Landfill Closure Year']
 
-					var popup = `<b>${name}</b><br> 
-                             Current Status: ${status}<br>
-                             Dates of Operation: ${openYear}-${closeYear}<br>
-                             Waste in Place: ${wasteString} tons`
+					if (openYear == null && closeYear == null){
+						var popup = `<b>${name}</b><br> 
+		                     Current Status: ${status}<br>
+		                     Dates of Operation: Unknown<br>
+		                     Waste in Place: ${wasteString} tons`
+					} else if (closeYear == null){
+						var popup = `<b>${name}</b><br> 
+		                     Current Status: ${status}<br>
+		                     Dates of Operation: ${openYear}-Unknown<br>
+		                     Waste in Place: ${wasteString} tons`
+					} else if (openYear == null){
+						var popup = `<b>${name}</b><br> 
+		                     Current Status: ${status}<br>
+		                     Dates of Operation: Unknown-${closeYear}<br>
+		                     Waste in Place: ${wasteString} tons`
+					} else {
+						var popup = `<b>${name}</b><br> 
+		                     Current Status: ${status}<br>
+		                     Dates of Operation: ${openYear}-${closeYear}<br>
+		                     Waste in Place: ${wasteString} tons`
+					}
+					
+					// mouseover and mouseout Popup interactivity
+					layer.on('mouseover', function (e) {
+						this.openPopup()
+						e.target.setStyle({
+							fillColor: 'yellow'
+						})
+					})
+
+					layer.on('mouseout', function (e) {
+						this.closePopup()
+						//e.target.resetStyle({ --- is not a function, doesnt work
+						e.target.setStyle({
+							fillColor: '#ff6666'
+						})
+					})
+
 				}
 				layer.bindPopup(popup)
-
 			}
-
-
-		}).addTo(map);
+		}).addTo(map); //-----end of CLOSED/UNKNOWN LAYER------
 
 		// legend
 		var statusLayers = {
@@ -407,27 +474,6 @@
 			var radius = Math.sqrt(area / Math.PI);
 			return radius * .01;
 		}
-
-		// mouseover and mouseout Popup interactivity
-		openLayer.eachLayer(function (layer) {
-			layer.on('mouseover', function (e) {
-				this.openPopup()
-			})
-			layer.on('mouseout', function (e) {
-				dataLayer.resetStyle(dataLayer)
-				this.closePopup()
-			})
-		})
-
-		closedLayer.eachLayer(function (layer) {
-			layer.on('mouseover', function (e) {
-				this.openPopup()
-			})
-			layer.on('mouseout', function (e) {
-				dataLayer.resetStyle(dataLayer)
-				this.closePopup()
-			})
-		})
 
 		// // Total state tonnage with tooltip
 		// $.when(landfillsLayer).done(function () {
